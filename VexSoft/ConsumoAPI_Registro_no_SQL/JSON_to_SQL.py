@@ -11,82 +11,80 @@ def create_connection(driver, server, database, username, password):
         print(e)
     return conn
 
+def cria_tabela(response, conn, nome_tabela):
+    response_data = response.json()  # Converte o conteúdo da resposta para um objeto Python
+    campos = response_data[0].keys() # Pega apenas as chaves de um registro do banco
+    
+    table_name = nome_tabela # Atribui o valor da tabela
+    cursor = conn.cursor() # Libera o terminal do SQL com a conexão, e atribui a variavel
+
+    cursor.execute(f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{table_name}'") # Verifica a tabela se ela existe
+    if cursor.fetchone()[0] == 0: #se não existir ==0 /se existir == 1
+        # Registra os valores do campo /tamanho de 5000 para o maior campo
+        columns = ','.join([f'[{campo}] VARCHAR(8000)' for campo in campos]) # Faz uma query com cada valor do campo, sendo um array pegando todos os dados do campo repitindo o tamanho 
+        create_table_query = f'CREATE TABLE {table_name} ({columns})' # Cria a tabela com as colunas
+        cursor.execute(create_table_query) #executa chamando o cursor->(cursor seria o terminal do sql server)
+        conn.commit() #comita -> faz a execução
+        print(f'Table {table_name} created successfully with columns: {", ".join(campos)}')
+    else:
+         print(f'Table {table_name} already exists.')
+
+
+
+def alter_table_column_size(conn, table_name, column_name, new_size):
+    cursor = conn.cursor()
+    alter_query = f"ALTER TABLE {table_name} ALTER COLUMN {column_name} VARCHAR({new_size})"
+    cursor.execute(alter_query)
+    conn.commit()
+    print(f"Column {column_name} in table {table_name} altered successfully with size {new_size}.")
+
+
+
+
+def insere_valores(response, conn, table_name):
+    response_data = response.json()  # Converte o conteúdo da resposta para um objeto Python
+    campos = response_data[0].keys() # Pega apenas as chaves de um registro do banco
+
+    cursor = conn.cursor()
+    insert_query = f"INSERT INTO {table_name} ({', '.join(campos)}) VALUES ({', '.join(['?' for _ in campos])})"
+    for row in response_data:
+        values = [str(row[key]) for key in campos]  # Convert all values to string
+        cursor.execute(insert_query, values)
+    conn.commit()
+    print(f'Data inserted into {table_name} successfully.')
+
 # URL da API
 url = "https://apiv3.vexsoft.com.br/vistoria/axn105"
 
 # Parâmetros da requisição
 params = {
-    "data_inicial": "2023-12-01",
+    "data_inicial": "2023-01-01",
     "data_final": "2023-12-31",
-    "limite": 1
+    "limite": 5
 }
 
-# Enviar a requisição POST
 response = requests.post(url, json=params)
 
-# Verificar se a requisição foi bem-sucedida (código de status 200)
 if response.status_code == 200:
-    # Exibir a resposta da requisição
-    data = response.json()
 
-    #print(data)
-
-    # Conectar-se ao banco de dados SQL Server
+    # Conectar-se ao banco de dados SQL Server e atribui a variavel
     conn = create_connection(
-        driver='{SQL Server}',  # substitua pelo driver adequado
+        driver='{SQL Server}',
         server='GEO-WNB24020193',
         database='Teste',
         username='',
         password=''
-    )
+    ) # faz a conexao e atribui a variavel
 
-    # SQL para criar a tabela
-    sql_create_table = """
-    CREATE TABLE registros (
-        id INT,
-        id_usuario INT,
-        vistoriador VARCHAR(255),
-        data DATETIME,
-        hora TIME,
-        email_cliente VARCHAR(255),
-        placa VARCHAR(255),
-        chassi VARCHAR(255),
-        tipo_vistoria VARCHAR(255),
-        km_odometro INT,
-        horimetro INT,
-        nivel_combustivel INT,
-        observacao TEXT,
-        vistoria_id VARCHAR(255),
-        id_empresa INT,
-        email_enviado_cliente INT,
-        token_empresa VARCHAR(255),
-        versao_app VARCHAR(255)
-       
-    );
-    """
+    cria_tabela(response, conn, nome_tabela='Teste2') #envia a requisicao, a conexao, #nome da tabela
+    insere_valores(response, conn, table_name='Teste2')
+    alter_table_column_size(conn, 'Teste2', 'fotos', 'MAX')
 
-    # Criar a tabela
-    if conn is not None:
-        # Criar a tabela
-        conn.execute(sql_create_table)
-        
-        # Inserir os dados na tabela
-        cursor = conn.cursor()
-        for item in data: #pega os dados retornados do json
-            cursor.execute("""
-                INSERT INTO registros 
-                (id, id_usuario, vistoriador, data, hora, email_cliente, placa, chassi, tipo_vistoria, km_odometro, horimetro, 
-                nivel_combustivel, observacao, vistoria_id, id_empresa, email_enviado_cliente, token_empresa, versao_app)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (item['id'], item['id_usuario'], item['vistoriador'], item['data'], item['hora'], item['email_cliente'],
-                item['placa'], item['chassi'], item['tipo_vistoria'], item['km_odometro'], item['horimetro'],
-                item['nivel_combustivel'], item['observacao'], item['vistoria_id'], item['id_empresa'],
-                item['email_enviado_cliente'], item['token_empresa'], item['versao_app']))
-        conn.commit()
-        conn.close()
-        print("Dados inseridos com sucesso no banco de dados")
-    else:
-        print("Erro! Não foi possível conectar-se ao banco de dados.")
+
 else:
     # Se não for bem-sucedida, exibir o código de status
     print("Erro ao enviar requisição. Código de status:", response.status_code)
+    
+
+
+conn.close()
