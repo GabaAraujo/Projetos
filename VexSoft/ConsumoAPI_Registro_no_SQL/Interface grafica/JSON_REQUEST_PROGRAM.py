@@ -7,6 +7,13 @@ from datetime import datetime, timedelta
 import time
 import threading
 
+
+
+
+
+
+
+
 class App:
     def __init__(self, root):
         self.root = root
@@ -151,24 +158,24 @@ class App:
             now = datetime.now().strftime("%H:%M")
             if now == time_to_run:
                 self.log("Starting requests...")
-                for _ in range(num_requests):
-                    data_atual = datetime.now()
-                    data_d1 = data_atual - timedelta(days=1)
-                    data_d2 = data_atual - timedelta(days=2)
+                
+                data_atual = datetime.now()
+                data_d1 = data_atual - timedelta(days=1)
+                data_d2 = data_atual - timedelta(days=2)
 
-                    params = {
+                params = {
                         "data_inicial": data_d2.strftime("%Y-%m-%d"),
                         "data_final": data_d1.strftime("%Y-%m-%d"),
-                        "limite": 5
+                        "limite": num_requests
                     }
 
-                    response = requests.post(url, json=params)
-                    if response.status_code == 200:
+                response = requests.post(url, json=params)
+                if response.status_code == 200:
                         self.log("Request successful.")
                         if conn:
                             self.cria_tabela(response, conn, table_name)
                             self.insere_valores(response, conn, table_name)
-                    else:
+                else:
                         self.log(f"Request failed. Status code: {response.status_code}")
                 self.log("Requests completed.")
                 time.sleep(60)  # Wait for one minute before checking time again
