@@ -105,8 +105,7 @@ class App:
             [{descricoes[3]}], [{descricoes[4]}],[{descricoes[5]}], 
             [{descricoes[6]}], [{descricoes[7]}],[{descricoes[8]}], 
             [{descricoes[9]}], [{descricoes[10]}],[{descricoes[11]}], 
-            [{descricoes[12]}], [{descricoes[13]}],[{descricoes[14]}]
-            )
+            [{descricoes[12]}], [{descricoes[13]}],[{descricoes[14]}])
             VALUES
             ('{ids[0 + (incremento * x)]}', 
             '{respostas[0 + (incremento * x)]}', '{respostas[1 + (incremento * x)]}', '{respostas[2 + (incremento * x)]}',
@@ -122,7 +121,7 @@ class App:
                
                 cursor.execute(query) #executa chamando o cursor->(cursor seria o terminal do sql server)
                 conn.commit() #comita -> faz a execução
-                self.log("Dados inseridos com sucesso")
+                self.log(f"Dados inseridos com sucesso na tabela {tabela_nova}")
             except pyodbc.Error as e:
                 conn.rollback()
                 self.log(f"Erro ao inserir dados: {e}")
@@ -136,6 +135,22 @@ class App:
             SELECT [id]
                 ,[campos_personalizaveis]
             FROM [Teste].[dbo].[{table_name}] 
+            WHERE [campos_personalizaveis] LIKE '%''descricao'': ''Técnico executante 3'', ''resposta'': ''''%'
+            AND [campos_personalizaveis] LIKE '%''Placa do veículo''%'
+            AND [campos_personalizaveis] LIKE '%''Empresa do veículo''%'
+            AND [campos_personalizaveis] LIKE '%''Tipo de equipamento''%'
+            AND [campos_personalizaveis] LIKE '%''Fabricante''%'
+            AND [campos_personalizaveis] LIKE '%''Modelo''%'
+            AND [campos_personalizaveis] LIKE '%''Técnico executante 1''%'
+            AND [campos_personalizaveis] LIKE '%''Técnico executante 2''%'
+            AND [campos_personalizaveis] LIKE '%''Qual o produto instalado?''%'
+            AND [campos_personalizaveis] LIKE '%''Número Serial Antena''%'
+            AND [campos_personalizaveis] LIKE '%''Número Serial Display''%'
+            AND [campos_personalizaveis] LIKE '%''Número Serial Main Unit''%'
+            AND [campos_personalizaveis] LIKE '%''Horário - Aguardando veículo''%'
+            AND [campos_personalizaveis] LIKE '%''Horário - Início da atividade''%'
+            AND [campos_personalizaveis] LIKE '%''Horário - Fim da atividade''%'
+            AND [campos_personalizaveis] LIKE '%''Horário - Fim da configuração''%'
             """)
         
         resultados = cursor.fetchall()
