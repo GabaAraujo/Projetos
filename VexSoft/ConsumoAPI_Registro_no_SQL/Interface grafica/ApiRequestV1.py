@@ -68,92 +68,82 @@ class App:
 
 
 
-    def limpa_tabela(self, tabela_nova,conn):    
+  
+
+    def registra_dados_dinamicos(self, table_name, tabela_nova, ids, descricoes, respostas, conn, num_requests):
         cursor = conn.cursor()
 
-        query_delete = f"DELETE FROM [{tabela_nova}]"
-        cursor.execute(query_delete)
-        conn.commit()
+        # Dicionário para mapear descrições para nomes de colunas
+        descricao_para_coluna = {
+            'Placa do veículo': 'placa_veiculo',
+            'Empresa do veículo': 'empresa_veiculo',
+            'Tipo de equipamento': 'tipo_equipamento',
+            'Fabricante': 'fabricante',
+            'Modelo': 'modelo',
+            'Técnico executante 1': 'tecnico_executante_1',
+            'Técnico executante 2': 'tecnico_executante_2',
+            'Técnico executante 3': 'tecnico_executante_3',
+            'Qual o produto instalado?': 'produto_instalado',
+            'Número Serial Antena': 'numero_serial_antena',
+            'Número Serial Display': 'numero_serial_display',
+            'Número Serial Main Unit': 'numero_serial_main_unit',
+            'Instalação com Antena Beacon?': 'instalacao_com_antena_beacon',
+            'Número Serial Antena Beacon': 'numero_serial_antena_beacon',
+            'Horário - Aguardando veículo': 'horario_aguardando_veiculo',
+            'Horário - Início da atividade': 'horario_inicio_atividade',
+            'Horário - Fim da atividade': 'horario_fim_atividade',
+            'Horário - Fim da configuração': 'horario_fim_configuracao'
+        }
 
-        # Fechar o cursor após a execução da consulta
-        cursor.close()
+        colunas = ", ".join([f"[{col}]" for col in descricao_para_coluna.values()])
+        placeholders = ", ".join(["?" for _ in descricao_para_coluna.values()])
 
+        query_insert = f"INSERT INTO [{tabela_nova}] ([id], {colunas}) VALUES (?, {placeholders})"
+        query_check = f"SELECT COUNT(*) FROM [{tabela_nova}] WHERE [id] = ?"
 
+        for id in ids:
+            # Verifica se o id já existe
+            cursor.execute(query_check, (id,))
+            if cursor.fetchone()[0] == 0:
+                # Cria um dicionário para armazenar os valores de resposta inicializados com None
+                data = {col: None for col in descricao_para_coluna.values()}
+                for descricao, resposta in zip(descricoes, respostas):
+                    coluna = descricao_para_coluna.get(descricao)
+                    if coluna:
+                        data[coluna] = resposta
 
+                valores = [id] + list(data.values())
 
-    def registra_dados_dinamicos(self, table_name,tabela_nova, ids, descricoes, respostas, conn):
-        cursor = conn.cursor()
-        cursor.execute(f"""
-        SELECT count([id])
-        FROM [{table_name}]
-        """)
-     
-
-      
-
-        
-        
-
-        valores_a_repetir = int(cursor.fetchone()[0])  # Pegando o valor das linhas
-        incremento = 15
-   
-
-        self.limpa_tabela(tabela_nova, conn)
-        for x in range(valores_a_repetir):  # Iterando apenas 15 vezes
-            query =  f"""INSERT INTO {tabela_nova}(ID,
-            [{descricoes[0]}], [{descricoes[1]}], [{descricoes[2]}],
-            [{descricoes[3]}], [{descricoes[4]}],[{descricoes[5]}], 
-            [{descricoes[6]}], [{descricoes[7]}],[{descricoes[8]}], 
-            [{descricoes[9]}], [{descricoes[10]}],[{descricoes[11]}], 
-            [{descricoes[12]}], [{descricoes[13]}],[{descricoes[14]}])
-            VALUES
-            ('{ids[0 + (incremento * x)]}', 
-            '{respostas[0 + (incremento * x)]}', '{respostas[1 + (incremento * x)]}', '{respostas[2 + (incremento * x)]}',
-            '{respostas[3 + (incremento * x)]}', '{respostas[4 + (incremento * x)]}', '{respostas[5 + (incremento * x)]}',
-            '{respostas[6 + (incremento * x)]}', '{respostas[7 + (incremento * x)]}', '{respostas[8 + (incremento * x)]}',
-            '{respostas[9 + (incremento * x)]}', '{respostas[10 + (incremento * x)]}', '{respostas[11 + (incremento * x)]}',
-            '{respostas[12 + (incremento * x)]}', '{respostas[13 + (incremento * x)]}', '{respostas[14 + (incremento * x)]}')"""
-
-
-            #print(query)
-            try:
-               
-               
-                cursor.execute(query) #executa chamando o cursor->(cursor seria o terminal do sql server)
-                conn.commit() #comita -> faz a execução
-                self.log(f"Dados inseridos com sucesso na tabela {tabela_nova}")
-            except pyodbc.Error as e:
-                conn.rollback()
-                self.log(f"Erro ao inserir dados: {e}")
+              # Tenta executar a inserção
+                
+        try:
+                    cursor.execute(query_insert, valores)
+                    conn.commit()
+                    self.log(f"Dados inseridos com sucesso na tabela {tabela_nova}")
+        except Exception as e:
+                    conn.rollback()
+                    self.log(f"Erro ao inserir dados: {e}")
+        else:
+                self.log(f"Registro com id {id} já existe e não foi inserido novamente.")  
+    
 
 
     
 
-    def registra_campos_dinamicos(self, conn, table_name, tabela_nova): 
+    def registra_campos_dinamicos(self, conn, table_name, tabela_nova,num_requests): 
         cursor = conn.cursor()
         cursor.execute(f"""
-            SELECT [id]
-                ,[campos_personalizaveis]
-            FROM [{table_name}] 
-            WHERE [campos_personalizaveis] LIKE '%''descricao'': ''Técnico executante 3'', ''resposta'': ''''%'
-            AND [campos_personalizaveis] LIKE '%''Placa do veículo''%'
-            AND [campos_personalizaveis] LIKE '%''Empresa do veículo''%'
-            AND [campos_personalizaveis] LIKE '%''Tipo de equipamento''%'
-            AND [campos_personalizaveis] LIKE '%''Fabricante''%'
-            AND [campos_personalizaveis] LIKE '%''Modelo''%'
-            AND [campos_personalizaveis] LIKE '%''Técnico executante 1''%'
-            AND [campos_personalizaveis] LIKE '%''Técnico executante 2''%'
-            AND [campos_personalizaveis] LIKE '%''Qual o produto instalado?''%'
-            AND [campos_personalizaveis] LIKE '%''Número Serial Antena''%'
-            AND [campos_personalizaveis] LIKE '%''Número Serial Display''%'
-            AND [campos_personalizaveis] LIKE '%''Número Serial Main Unit''%'
-            AND [campos_personalizaveis] LIKE '%''Horário - Aguardando veículo''%'
-            AND [campos_personalizaveis] LIKE '%''Horário - Início da atividade''%'
-            AND [campos_personalizaveis] LIKE '%''Horário - Fim da atividade''%'
-            AND [campos_personalizaveis] LIKE '%''Horário - Fim da configuração''%'
+            SELECT TOP {num_requests} [id], [campos_personalizaveis]
+            FROM [{table_name}]
+            ORDER BY [data] DESC, [hora] DESC;
+
+
+
             """)
         
         resultados = cursor.fetchall()
+
+        #print(resultados)
 
         if resultados:
             ids = []
@@ -173,22 +163,58 @@ class App:
                     descricoes.append(descricao)
                     respostas.append(resposta)
 
-            cursor.execute(f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{tabela_nova}'")
-            if cursor.fetchone()[0] == 0:
-                columns = ','.join([f'[{desc}] VARCHAR(8000)' for desc in descricoes[:16]])
-                create_table_query = f'CREATE TABLE {tabela_nova} (ID INT, {columns})'
-                print(create_table_query)
-                cursor.execute(create_table_query)
-                conn.commit()
-                print(f'Table {tabela_nova} created successfully with columns: {"ID, " + ", ".join(descricoes[:16])}')
-                self.registra_dados_dinamicos(table_name,tabela_nova, ids, descricoes, respostas, conn)  #pega todo os dados que estao no banco
+      
 
-            else:
-                print(f'Table {tabela_nova} already exists.')
-                self.registra_dados_dinamicos(table_name,tabela_nova, ids, descricoes, respostas, conn) 
+                self.registra_dados_dinamicos(table_name,tabela_nova, ids, descricoes, respostas, conn,num_requests) 
         
+            print(id_campos)
+            print(descricoes)
+            print(respostas)
+
         else:
             print("Nenhum resultado encontrado.")
+
+
+
+
+
+    def cria_tabela_dinamica(self, conn, tabela_nova):
+        cursor = conn.cursor()
+    
+        # Verificando a existência da tabela
+        cursor.execute(f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{tabela_nova}'")
+        if cursor.fetchone()[0] == 0:
+            # Cria a tabela caso ela não exista
+            cursor.execute(f"""
+                CREATE TABLE "{tabela_nova}" (
+                    id VARCHAR(255),
+                    placa_veiculo VARCHAR(255),
+                    placa_equipamento VARCHAR(255),
+                    empresa_veiculo VARCHAR(255),
+                    tipo_equipamento VARCHAR(255),
+                    fabricante VARCHAR(255),
+                    modelo VARCHAR(255),
+                    tecnico_executante_1 VARCHAR(255),
+                    tecnico_executante_2 VARCHAR(255),
+                    tecnico_executante_3 VARCHAR(255),
+                    produto_instalado VARCHAR(255),
+                    numero_serial_antena VARCHAR(255),
+                    numero_serial_display VARCHAR(255),
+                    numero_serial_main_unit VARCHAR(255),
+                    instalacao_com_antena_beacon VARCHAR(255),
+                    numero_serial_antena_beacon VARCHAR(255),
+                    horario_aguardando_veiculo VARCHAR(255),
+                    horario_inicio_atividade VARCHAR(255),
+                    horario_fim_atividade VARCHAR(255),
+                    horario_fim_configuracao VARCHAR(255)
+                );
+            """)
+            conn.commit()
+            self.log(f"Table `{tabela_nova}` created with success.")
+        else:
+            self.log(f"Table `{tabela_nova}` already exists.")
+
+
 
     def start_program(self):
         if not self.running:
@@ -250,13 +276,37 @@ class App:
         response_data = response.json()
         campos = response_data[0].keys()
 
+
+        #print(len(response_data))
         cursor = conn.cursor()
+        
+        # Inserção na tabela de dados principal
         insert_query = f"INSERT INTO {table_name} ({', '.join(campos)}) VALUES ({', '.join(['?' for _ in campos])})"
+        
+        # Query para verificar se o id já existe no SQL Server
+        check_query = f"SELECT 1 FROM {table_name} WHERE id = ?"
+
         for row in response_data:
-            values = [str(row[key]) for key in campos]
-            cursor.execute(insert_query, values)
-        conn.commit()
-        self.log(f"Data inserted into {table_name} successfully.")
+            id_value = row.get('id')  # Certifique-se de que 'id' é o nome correto do seu campo identificador
+            cursor.execute(check_query, (id_value,))
+            result = cursor.fetchone()
+            
+            if not result:  # Nenhum resultado significa que o id não existe
+                # Se o id não existe, insira o novo registro
+                values = [str(row[key]) for key in campos]
+                cursor.execute(insert_query, values)
+                self.log(f"Dado com id {id_value} inserido com sucesso.")
+               
+            else:
+                # Se o id já existe, log a mensagem (opcional)
+                self.log(f"Dado com id {id_value} ja existe na {table_name}. Não foi feita a inserção.")
+
+            conn.commit()
+            self.log(f"Data processing complete for {table_name}.")
+
+
+
+
 
     def run_program(self):
         url = self.url_entry.get()
@@ -293,7 +343,8 @@ class App:
                         if conn:
                             self.cria_tabela(response, conn, table_name)
                             self.insere_valores(response, conn, table_name)
-                            self.registra_campos_dinamicos(conn, table_name,"valores_dinamicos")
+                            self.cria_tabela_dinamica(conn, "valores_dinamicos")
+                            self.registra_campos_dinamicos(conn,table_name,"valores_dinamicos",num_requests)
                 else:
                         self.log(f"Request failed. Status code: {response.status_code}")
                 self.log("Requests completed.")
