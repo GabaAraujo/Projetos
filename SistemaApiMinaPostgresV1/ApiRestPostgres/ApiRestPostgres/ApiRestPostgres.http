@@ -1,0 +1,6 @@
+@ApiRestPostgres_HostAddress = http://localhost:5230
+
+GET {{ApiRestPostgres_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

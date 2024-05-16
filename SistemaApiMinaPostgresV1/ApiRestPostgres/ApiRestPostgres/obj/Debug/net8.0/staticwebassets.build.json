@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "oPh3WCU6w0/7vMlAUHd8cKJdHg+/0G9F3q58N59/pGs=",
+  "Source": "ApiRestPostgres",
+  "BasePath": "_content/ApiRestPostgres",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
