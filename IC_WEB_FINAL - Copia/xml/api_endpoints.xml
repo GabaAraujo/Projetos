@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<charts>
+    <chart id="chart_Transporte">
+        <url>https://localhost:7086/api/MinaApi/EquipmentTransport</url>
+    </chart>
+    <chart id="chart_Carga">
+        <url>https://localhost:7086/api/MinaApi/EquipamentoCarga</url>
+    </chart>
+    <chart id="chart_Auxiliar">
+        <url>https://localhost:7086/api/MinaApi/EquipamentoAuxiliar</url>
+    </chart>
+    <chart id="chart_Manutencao">
+        <url>https://localhost:7086/api/MinaApi/EquipamentoManutencao</url>
+    </chart>
+    <chart id="chart_AlocacaoOrigem" isAlocacao="true">
+        <url>https://localhost:7086/api/MinaApi/AlocacaoOrigem</url>
+    </chart>
+    <chart id="chart_AlocacaoDestino" isAlocacao="true">
+        <url>https://localhost:7086/api/MinaApi/AlocacaoDestino</url>
+    </chart>
+    <chart id="chart_AlocacaoMaquina">
+        <url>https://localhost:7086/api/MinaApi/AlocacaoMaquina</url>
+    </chart>
+    <chart id="chart_Minerio">
+        <url>https://localhost:7086/api/MinaApi/ProducaoAnual</url>
+    </chart>
+    <chart id="chart_InformacoesTurno" isTurno="true">
+        <url>https://localhost:7086/api/MinaApi/ProductionVolumeTurno6</url>
+        <series name="Volume" field="volume"/>
+    </chart>
+    <chart id="chart_RitmoProducao" isTurno="true">
+        <url>https://localhost:7086/api/MinaApi/ProductivityTurno6</url>
+        <series name="Produtividade" field="produtividade"/>
+    </chart>
+
+
+     <chart id="chart_ListaEquipamentos" isTurno="true">
+        <url>https://localhost:7086/api/MinaApi/ListaEquipamentos</url>
+        <series name="Equipamento" field="equipamento"/>
+    </chart>
+
+
+
+</charts>

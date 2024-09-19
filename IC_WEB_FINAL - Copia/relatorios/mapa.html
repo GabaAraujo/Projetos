@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoramento de Equipamento</title>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuzX0n5xFmGG1XcWLnoA3x9VlseR4Et3s&libraries=geometry&callback=initMap"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.2/proj4.js"></script>
+    <script>
+        let map;
+        let markers = {}; // Dictionary to store markers for each HMI
+        const HMIS_TO_MONITOR = [269, 278, 58, 146, 295, 5,  318, 125, 239, 35, 23, 122, 88, 246, 145, 149, 320, 126, 45, 188, 210, 157, 201, 20, 66, 158, 70, 244, 170, 140, 224, 237, 211, 302, 171, 78, 289, 136, 137, 73, 305, 147, 273, 285, 3, 362, 216, 174, 124, 73, 335, 
+  273, 3, 173, 362, 216, 124, 125, 239, 246, 149, 35, 320, 88, 188, 145,
+  210, 126, 122, 201, 45, 157]; // List of HMIs to track
+        const WEBSOCKET_SERVER_LOCATION = "ws://18.231.168.111:4000";  // Agua Limpa
+        const DEFAULT_LAT_LNG = { lat: -19.982597211764833, lng: -43.94658478502456 };
+        var ws;
+        var clientId = GetClientID();
+
+        class Status {
+            constructor(latitude, longitude, ihm, state, speed, signal, events) {
+                this.latitude = latitude;
+                this.longitude = longitude;
+                this.ihm = ihm;
+                this.state = state;
+                this.speed = speed;
+                this.signal = signal;
+                this.events = events;
+            }
+        }
+
+        function GetClientID() {
+            return Math.floor(Math.random() * (900 - 10)) + 10;
+        }
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: DEFAULT_LAT_LNG,
+                zoom: 18,
+                mapTypeId: google.maps.MapTypeId.SATELLITE
+            });
+
+            WebSocketConnect();
+        }
+
+        function WebSocketConnect() {
+            if ("WebSocket" in window) {
+                ws = new WebSocket(WEBSOCKET_SERVER_LOCATION);
+                ws.binaryType = "arraybuffer";
+
+                ws.onopen = function() {
+                    console.log("WebSocket: conexão estabelecida com o servidor");
+                    ws.send("LOGIN|AP|" + clientId + "|" + clientId);
+                    console.log("Mensagem de login enviada:", "LOGIN|AP|" + clientId + "|" + clientId);
+                };
+
+                ws.onmessage = function(m) {
+                    console.log("Mensagem recebida:", m.data);
+                    if (m.data instanceof ArrayBuffer) {
+                        var pack = m.data;
+                        PackageReceived(pack);
+                    } else {
+                        console.log("Dados recebidos não são ArrayBuffer:", m.data);
+                    }
+                };
+
+                ws.onclose = function() {
+                    console.log("WebSocket: conexão encerrada");
+                    setTimeout(function() {
+                        console.log("Tentando reconectar...");
+                        WebSocketConnect();
+                    }, 5000);
+                };
+
+                ws.onerror = function(e) {
+                    console.log("WebSocket: erro detectado", e);
+                };
+            } else {
+                alert("WebSocket NÃO é suportado pelo seu navegador!");
+            }
+        }
+
+        function ByteArrayToLong(byteArray) {
+            var value = 0;
+            for (var i = byteArray.length - 1; i >= 0; i--) {
+                value = (value * 256) + byteArray[i] * 1;
+            }
+            return value;
+        }
+
+        function UTMtoGeo(x, y) {
+            proj4.defs([['EPSG:3857', "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"],
+                        ['EPSG:32723', '+proj=utm +zone=23 +south +datum=WGS84 +units=k +no_defs']]);
+
+            var easting = x / 100;
+            var northing = y / 100;
+
+            var pt = proj4('EPSG:32723', 'EPSG:4326', [easting, northing]);
+            return [pt[1], pt[0]]; // [latitude, longitude]
+        }
+
+        function PackageReceived(pack) {
+            if (pack instanceof ArrayBuffer) {
+                var buffer = new Uint8Array(pack);
+
+                if (buffer[4] == 15) {
+                    var ihmBuffer = buffer.slice(2, 4);
+                    var ihm = ByteArrayToLong(ihmBuffer);
+
+                    if (HMIS_TO_MONITOR.includes(ihm)) { // Check if IHM is in the list
+                        var xBuffer = buffer.slice(7, 11);
+                        var x = ByteArrayToLong(xBuffer);
+
+                        var yBuffer = buffer.slice(11, 15);
+                        var y = ByteArrayToLong(yBuffer);
+
+                        var coords = UTMtoGeo(x, y);
+
+                        var stateBuffer = buffer.slice(20, 22);
+                        var cdstate = ByteArrayToLong(stateBuffer);
+
+                        var eventsBuffer = buffer.slice(22, 24);
+                        var events = ByteArrayToLong(eventsBuffer);
+
+                        var speedBuffer = buffer.slice(18, 19);
+                        var speed = speedBuffer[0];
+
+                        var signalBuffer = buffer.slice(28, 29);
+                        var signal = signalBuffer[0];
+
+                        var state = GetStateByCd(cdstate);
+
+                        var status = new Status(coords[0], coords[1], ihm, state, speed, signal, events);
+                        UpdateEquipmentStatus(status);
+                    } else {
+                        console.log("IHM não monitorado:", ihm);
+                    }
+                } else {
+                    console.log("Buffer não corresponde ao formato esperado. Buffer[4]:", buffer[4]);
+                }
+            }
+        }
+
+                function updateMarkerPosition(ihm, latLng, status) {
+            // Create the content for the InfoWindow
+            const infoContent = `
+                <div>
+                    <h4>Equipamento IHM: ${status.ihm}</h4>
+                    <p><strong>Latitude:</strong> ${status.latitude}</p>
+                    <p><strong>Longitude:</strong> ${status.longitude}</p>
+                    <p><strong>Estado:</strong> ${status.state}</p>
+                    <p><strong>Velocidade:</strong> ${status.speed} km/h</p>
+                    <p><strong>Sinal:</strong> ${status.signal}</p>
+                    <p><strong>Eventos:</strong> ${status.events}</p>
+                </div>
+            `;
+
+            // Create an InfoWindow for each marker
+            const infoWindow = new google.maps.InfoWindow({
+                content: infoContent,
+                maxWidth: 300
+            });
+
+            if (!markers[ihm]) {
+                // Create a new marker if it doesn't exist
+                markers[ihm] = new google.maps.Marker({
+                    position: latLng,
+                    map: map,
+                    title: 'Equipamento ' + ihm,
+                    icon: {
+                        url: '../images/Caminhão.png',
+                        scaledSize: new google.maps.Size(50, 50)
+                    }
+                });
+                
+                // Add a click listener to open the InfoWindow when marker is clicked
+                markers[ihm].addListener('click', function() {
+                    infoWindow.open(map, markers[ihm]);
+                });
+            } else {
+                // Update the existing marker's position
+                markers[ihm].setPosition(latLng);
+            }
+        }
+
+        // Update this function to pass status data to updateMarkerPosition
+        function UpdateEquipmentStatus(status) {
+            var newLatLng = { lat: status.latitude, lng: status.longitude };
+
+            if (newLatLng.lat >= -90 && newLatLng.lat <= 90 && newLatLng.lng >= -180 && newLatLng.lng <= 180) {
+                updateMarkerPosition(status.ihm, newLatLng, status); // Pass status to display info in InfoWindow
+            } else {
+                console.error("Coordenadas inválidas - Latitude:", newLatLng.lat, "Longitude:", newLatLng.lng);
+            }
+
+            updateStatusLegend(status.state);
+        }
+
+
+
+        function GetStateByCd(cdstate) {
+            switch (cdstate) {
+                case 1: return "Parado";
+                case 2: return "Movimentando";
+                case 3: return "Carregando";
+                default: return "Desconhecido";
+            }
+        }
+
+        function updateStatusLegend(state) {
+            const legend = document.getElementById("status-legend");
+            legend.innerHTML = "Último estado do equipamento: " + state;
+        }
+    </script>
+</head>
+<body>
+    <h3>Monitoramento de Equipamento</h3>
+    <div id="map" style="height: 500px; width: 100%;"></div>
+    <div id="status-legend" style="position: absolute; bottom: 10px; left: 10px; background-color: white; padding: 10px; border: 1px solid black;">
+        Último estado do equipamento: Desconhecido
+    </div>
+</body>
+</html>

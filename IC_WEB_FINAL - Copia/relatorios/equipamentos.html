@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment Viewer</title>
+    <!-- Include Bootstrap and your custom styles -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --primary-clr: #7522e6;
+          --bg-clr: #f2f4f5;
+          --white-bg: #fff;
+          --dark-text-clr: #363b46;
+          --light-text-clr: #fff;
+          --hover-clr: #f1e8fd;
+        }
+
+        body.dark-mode {
+          --primary-clr: #7522e6;
+          --bg-clr: #1e1e1e;
+          --white-bg: #23262b;
+          --dark-text-clr: #fff;
+          --light-text-clr: #fff;
+          --hover-clr: #31313f;
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+          min-height: 100vh;
+          display: flex;
+          background: var(--bg-clr);
+          position: relative;
+        }
+
+        .container {
+          width: 85px;
+          min-height: 500px;
+          padding: 20px;
+          overflow: hidden;
+          border-radius: 10px;
+          background-color: var(--white-bg);
+          transition: width 0.3s ease;
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100vh;
+          z-index: 1000;
+        }
+
+        .container.active {
+          width: 250px;
+        }
+
+        .container .logo {
+          width: 100%;
+          margin-bottom: 30px;
+        }
+
+        .container ul {
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 0;
+        }
+
+        .link-items {
+          padding: 0;
+        }
+
+        .link-item a {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          padding: 10px;
+          border-radius: 10px;
+          text-decoration: none;
+          font-size: 16px;
+          white-space: nowrap;
+          text-transform: capitalize;
+          color: var(--dark-text-clr);
+          transition: background-color 0.3s;
+        }
+
+        .link-item a span {
+          transition: transform 0.5s, opacity 0.5s;
+          transform: translateX(0);
+          opacity: 1;
+        }
+
+        .link-item a:hover {
+          background-color: var(--hover-clr);
+        }
+
+        .link-item.active a {
+          color: var(--light-text-clr);
+          background-color: var(--primary-clr);
+        }
+
+        .link-item ion-icon {
+          min-width: 20px;
+          min-height: 20px;
+          margin-right: 20px;
+        }
+
+        .link-item img {
+          width: 30px;
+          height: 30px;
+          margin-right: 20px;
+          border-radius: 50%;
+        }
+
+        /* Submenu styles */
+        .submenu {
+          display: none;
+          list-style: none;
+          padding-left: 20px;
+          margin: 0;
+          opacity: 0;
+          max-height: 0;
+          overflow: hidden;
+          transition: opacity 0.3s, max-height 0.3s;
+        }
+
+        .submenu.visible {
+          display: block;
+          opacity: 1;
+          max-height: 300px;
+        }
+
+        .submenu li {
+          margin: 5px 0;
+        }
+
+        .submenu li a {
+          text-decoration: none;
+          color: var(--dark-text-clr);
+          font-size: 14px;
+        }
+
+        .submenu li a.active {
+          background-color: var(--hover-clr);
+          color: var(--primary-clr);
+        }
+
+        /* Main content styling */
+        .main-content {
+          margin-left: 270px; /* Space for the sidebar */
+          padding: 20px;
+          flex-grow: 1;
+        }
+
+        .equipment-group h2 {
+          font-size: 1.25rem;
+          padding: 10px;
+          background-color: var(--primary-clr);
+          color: white;
+          border-radius: 8px;
+        }
+
+        .equipment-item img {
+          width: 60px;
+          height: 60px;
+          object-fit: contain;
+          margin-bottom: 5px;
+          border-radius: 4px;
+          background-color: var(--white-bg);
+          padding: 5px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .equipment-name {
+          font-size: 0.85rem;
+          color: var(--dark-text-clr);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="container">
+        <div class="logo">
+            <img src="/images/hexagon-logo-svg.svg" alt="Logo" height="50">
+        </div>
+        <ul class="link-items">
+            <li class="link-item active">
+              <a href="#" class="link">
+                <ion-icon name="home-outline"></ion-icon>
+                <span>Home</span>
+              </a>
+            </li>
+
+            <li class="link-item dashboard" data-menu="dashboards">
+                <a href="#">
+                    <ion-icon name="apps-outline"></ion-icon>
+                    <span>Dashboards</span>
+                    <ion-icon class="submenu-icon" name="chevron-down-outline"></ion-icon>
+                </a>
+                <ul class="submenu">
+                    <li><a href="../relatorios/producao.html">Relatorio Produção</a></li>
+                    <li><a href="#">Relatorio Equipamentos</a></li>
+                    <li><a href="#">Relatorio Efetividade</a></li>
+                </ul>
+            </li>
+
+            <li class="link-item">
+              <a href="#" class="link">
+                <ion-icon name="map-outline"></ion-icon>
+                <span>Mapa</span>
+              </a>
+            </li>
+
+            <li class="link-item">
+                <a href="#" class="link">
+                  <ion-icon class="analytics-outline" name="analytics-outline"></ion-icon>
+                  <span style="--i: 4">Fluxo</span>
+                <!--- <span class="num-noti">4</span> --->
+                </a>
+              </li>
+
+
+            <li class="link-item">
+              <a href="../relatorios/equipamentos.html" class="link">
+                <ion-icon name="construct-outline"></ion-icon>
+                <span>Equipamentos</span>
+              </a>
+            </li>
+
+            <li class="link-item">
+              <a href="#" class="link">
+                <ion-icon name="clipboard-outline"></ion-icon>
+                <span>Relatorios Devex</span>
+              </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <h1 class="my-4">Equipment List</h1>
+        <div id="equipment-list"></div>
+    </div>
+
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+
+    <script>
+        // Function to fetch API URL from XML
+        async function fetchApiUrlFromXml() {
+            try {
+                const response = await fetch('/xml/api_endpoints.xml'); // Path to your XML file
+                const xmlText = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+    
+                // Get the URL from the <chart> with id="chart_ListaEquipamentos"
+                const chartElement = xmlDoc.querySelector('chart[id="chart_ListaEquipamentos"] > url');
+                const apiUrl = chartElement ? chartElement.textContent : null;
+                
+                if (!apiUrl) {
+                    console.error('API URL not found in the XML for chart_ListaEquipamentos');
+                    return null;
+                }
+                
+                return apiUrl;
+            } catch (error) {
+                console.error('Error fetching or parsing the XML file:', error);
+                return null;
+            }
+        }
+    
+        // Submenu animation logic
+        const container = document.querySelector(".container");
+        const linkItems = document.querySelectorAll(".link-item");
+        const dashboardsMenu = document.querySelector('.link-item[data-menu="dashboards"]');
+        const submenu = dashboardsMenu.querySelector('.submenu');
+        const submenuIcon = dashboardsMenu.querySelector('.submenu-icon');
+    
+        // Container Hover (for expanding the sidebar)
+        container.addEventListener("mouseenter", () => {
+          container.classList.add("active");
+        });
+    
+        container.addEventListener("mouseleave", () => {
+          container.classList.remove("active");
+        });
+    
+        // Link-items Clicked
+        linkItems.forEach(linkItem => {
+          linkItem.addEventListener("click", (e) => {
+            const submenu = linkItem.querySelector(".submenu");
+            const submenuIcon = linkItem.querySelector(".submenu-icon");
+    
+            if (submenu) {
+              e.preventDefault(); // Prevent default link behavior if there is a submenu
+              const isActive = linkItem.classList.contains("active");
+    
+              linkItem.classList.toggle("active", !isActive);
+    
+              submenu.classList.toggle("visible", !isActive);
+              submenuIcon.setAttribute("name", isActive ? "chevron-down-outline" : "chevron-up-outline");
+    
+              linkItems.forEach(otherItem => {
+                if (otherItem !== linkItem) {
+                  otherItem.classList.remove("active");
+                  const otherSubmenu = otherItem.querySelector(".submenu");
+                  const otherSubmenuIcon = otherItem.querySelector(".submenu-icon");
+                  if (otherSubmenu) {
+                    otherSubmenu.classList.remove("visible");
+                  }
+                  if (otherSubmenuIcon) {
+                    otherSubmenuIcon.setAttribute("name", "chevron-down-outline");
+                  }
+                }
+              });
+            } else {
+              linkItems.forEach(item => item.classList.remove("active"));
+              linkItem.classList.add("active");
+            }
+          });
+        });
+    
+        // Handle submenu item clicks
+        document.querySelectorAll('.submenu li a').forEach(submenuItem => {
+          submenuItem.addEventListener('click', function (e) {
+            e.stopPropagation(); // Prevent the click event from bubbling up
+            document.querySelectorAll('.submenu li a').forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+          });
+        });
+    
+        // Fetch equipment data using URL from XML
+        async function fetchEquipmentData() {
+            const apiUrl = await fetchApiUrlFromXml(); // Get the API URL from the XML
+    
+            if (!apiUrl) {
+                return null; // If no API URL is found, exit early
+            }
+    
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching the equipment data:', error);
+                return null;
+            }
+        }
+    
+        // Convert hex image data to image URL
+        function convertHexToImage(hexData) {
+            const bytes = [];
+            for (let i = 0; i < hexData.length; i += 2) {
+                bytes.push(parseInt(hexData.substr(i, 2), 16));
+            }
+            const arrayBuffer = new Uint8Array(bytes).buffer;
+            const blob = new Blob([arrayBuffer], { type: "image/png" }); // Assuming PNG
+            return URL.createObjectURL(blob);
+        }
+    
+        // Group equipment by their type
+        function groupByType(equipmentData) {
+            return equipmentData.reduce((groups, item) => {
+                const group = item.nM_GROUP_IMAGE;
+                if (!groups[group]) {
+                    groups[group] = [];
+                }
+                groups[group].push(item);
+                return groups;
+            }, {});
+        }
+    
+        // Render equipment data
+        function renderEquipment(equipmentGroups) {
+            const equipmentList = document.getElementById('equipment-list');
+            equipmentList.innerHTML = ''; // Clear existing content
+    
+            for (const group in equipmentGroups) {
+                const groupDiv = document.createElement('div');
+                groupDiv.classList.add('equipment-group');
+    
+                const groupHeader = document.createElement('h2');
+                groupHeader.textContent = `${group} - ${equipmentGroups[group].length} equipment(s)`;
+                groupDiv.appendChild(groupHeader);
+    
+                const rowDiv = document.createElement('div');
+                rowDiv.classList.add('row');
+    
+                equipmentGroups[group].forEach(item => {
+                    const colDiv = document.createElement('div');
+                    colDiv.classList.add('col-md-1', 'equipment-item'); // Adjust column width as needed
+    
+                    const imageUrl = convertHexToImage(item.bL_IMAGE_EQT);
+    
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    colDiv.appendChild(img);
+    
+                    const nameDiv = document.createElement('div');
+                    nameDiv.classList.add('equipment-name');
+                    nameDiv.textContent = item.nM_EQT;
+                    colDiv.appendChild(nameDiv);
+    
+                    rowDiv.appendChild(colDiv);
+                });
+    
+                groupDiv.appendChild(rowDiv);
+                equipmentList.appendChild(groupDiv);
+            }
+        }
+    
+        // Initialize equipment data rendering
+        async function init() {
+            const equipmentData = await fetchEquipmentData();
+            if (equipmentData) {
+                const groupedData = groupByType(equipmentData);
+                renderEquipment(groupedData);
+            }
+        }
+    
+        window.onload = init;
+    </script>
+
+
+</body>
+</html>
